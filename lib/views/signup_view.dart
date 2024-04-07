@@ -69,6 +69,53 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
+  Future<void> submitSignUpForm() async {
+    final formState = _formKey.currentState;
+    if (formState?.validate() ?? false) {
+      // 폼의 현재 상태를 저장
+      formState?.save();
+      final formData = formState?.value;
+
+      final response = await http.post(
+        Uri.parse(
+            'https://j9wiqq9lxe.execute-api.ap-northeast-2.amazonaws.com/v1/api/members/signup'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({
+          "customId": formData?['customId'],
+          "email": formData?['email'],
+          "emailDeviceId": "abcd1234",
+          "password": formData?['password'],
+          "name": formData?['name'],
+          "phone": formData?['phoneNumber'],
+          "gender": formData?['gender'] == '여' ? 'F' : 'M',
+          "birth": formData?['birthdate']
+              ?.toString()
+              .split(' ')[0]
+              .replaceAll('-', ''), // 날짜 형식을 'yyyyMMdd'로 변경
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        // 요청 성공
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("회원가입 성공")),
+        );
+      } else {
+        // 요청 실패
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("회원가입 실패")),
+        );
+      }
+    } else {
+      // 폼 유효성 검사 실패.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("유효하지 않은 입력이 있습니다. 다시 확인해주세요.")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // 기존 코드는 유지하고, 인증번호 받기 버튼과 인증하기 버튼의 onPressed를 수정합니다.
@@ -294,15 +341,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // 인증하기 액션
-                      if (_emailController.text.isNotEmpty &&
-                          _codeController.text.isNotEmpty) {
-                        checkEmailCode(
-                            _emailController.text, _codeController.text);
-                      }
-                    },
-                    child: Text("인증하기"),
+                    onPressed: submitSignUpForm, // 메서드를 직접 호출합니다.
+                    child: Text("회원가입"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFFF83947),
                     ),
